@@ -3,6 +3,8 @@ import itertools
 
 
 def interpolate(img, pos, method="bilinear"):
+    img = img.reshape((img.shape[0], img.shape[1], -1))
+
     x = pos[0, :]
     y = pos[1, :]
     xLow = np.floor(x).astype('int')

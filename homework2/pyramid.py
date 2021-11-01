@@ -28,15 +28,18 @@ def laplacePyramid(img, layer):
 if __name__ == "__main__":
     img = Image.open(r"image\cake.jpg")
     img = img.convert('L')
-    start = (122, 59)
-    img = img.crop((start[0], start[1], start[0] + 256, start[1] + 256))
-    img = np.array(img).reshape((256, 256, 1))
+    # step= 256
+    # start = (122, 59)
+    step = 512
+    start = (394, 175)
+    img = img.crop((start[0], start[1], start[0] + step, start[1] + step))
+    img = np.array(img, dtype='float32').reshape((step, step, 1))
 
     layer = 5
     pyramid = laplacePyramid(img, layer)
 
     plt.figure(figsize=(10 * layer, 10))
     for i in range(len(pyramid)):
-        plt.subplot(1, layer, i+1)
-        plt.imshow(pyramid[i], cmap='gray')
+        plt.subplot(1, layer, i + 1)
+        plt.imshow(pyramid[i].squeeze(), cmap='gray')
     plt.show()
