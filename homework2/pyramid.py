@@ -1,7 +1,6 @@
 import numpy as np
 from PIL import Image
 from resize import subsampling, upsampling
-import matplotlib.pyplot as plt
 from utils import imgSave
 
 

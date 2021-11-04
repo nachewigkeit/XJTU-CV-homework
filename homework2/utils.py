@@ -52,20 +52,25 @@ def interpolate(img, pos, method="bilinear"):
     return value
 
 
-def subsampling(img, rate):
+def subsampling(img, rate, method="area"):
     oldshape = img.shape
     newshape = (np.ceil(oldshape[0] * rate[0]).astype('int'), np.ceil(oldshape[1] * rate[1]).astype('int'), oldshape[2])
     newimg = np.zeros(newshape)
 
-    for i in range(newshape[0]):
-        xstart = np.ceil(i / rate[0]).astype('int')
-        xend = np.ceil((i + 1) / rate[0]).astype('int')
-        for j in range(newshape[1]):
-            ystart = np.ceil(j / rate[0]).astype('int')
-            yend = np.ceil((j + 1) / rate[0]).astype('int')
+    if method == "area":
+        for i in range(newshape[0]):
+            xstart = np.ceil(i / rate[0]).astype('int')
+            xend = np.ceil((i + 1) / rate[0]).astype('int')
+            for j in range(newshape[1]):
+                ystart = np.ceil(j / rate[0]).astype('int')
+                yend = np.ceil((j + 1) / rate[0]).astype('int')
 
-            sub = img[xstart:xend, ystart:yend, :]
-            newimg[i, j] = np.mean(sub, axis=(0, 1))
+                sub = img[xstart:xend, ystart:yend, :]
+                newimg[i, j] = np.mean(sub, axis=(0, 1))
+    else:
+        for i in range(newshape[0]):
+            for j in range(newshape[1]):
+                newimg[i, j] = img[int(np.floor(i / rate[0])), int(np.floor(j / rate[1]))]
 
     return newimg
 
