@@ -1,5 +1,7 @@
 import numpy as np
 import itertools
+import matplotlib.pyplot as plt
+import cv2 as cv
 
 
 def interpolate(img, pos, method="bilinear"):
@@ -78,3 +80,36 @@ def upsampling(img, rate, method="bilinear"):
     inter = interpolate(img, pos, method)
     inter = inter.reshape((newshape[0], newshape[1], -1))
     return inter
+
+
+def imgSave(img, name, cmap=None):
+    plt.xticks([])
+    plt.yticks([])
+    plt.imshow(img, cmap)
+    plt.savefig("image/" + name + ".png", bbox_inches='tight', pad_inches=0)
+
+
+def gausDerivative(sigma, pos, direct):
+    x, y = pos
+    return -1 / (2 * np.pi * (sigma ** 4)) * pos[direct] * np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+
+
+def gausDerivativeFilter(sigma, direct):
+    gausSize = 25
+    filter = np.zeros((gausSize, gausSize))
+    mid = (gausSize - 1) // 2
+    for i in range(gausSize):
+        for j in range(gausSize):
+            filter[i, j] = gausDerivative(sigma, (i - mid, j - mid), direct)
+
+    return filter
+
+
+def getGrad(img, sigma):
+    xkernel = gausDerivativeFilter(sigma, 0)
+    xEdge = cv.filter2D(img, -1, xkernel)
+
+    ykernel = gausDerivativeFilter(sigma, 1)
+    yEdge = cv.filter2D(img, -1, ykernel)
+
+    return xEdge, yEdge

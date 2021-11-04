@@ -1,8 +1,7 @@
 import itertools
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
-from utils import interpolate
+from utils import interpolate, imgSave
 
 
 def getOldPos(shape, T):
@@ -59,13 +58,22 @@ if __name__ == "__main__":
     img = Image.open(r"image\cake.jpg")
     img = np.array(img) / 255
 
-    # newimg = translation(img, (50, 100))
-    # newimg = rotate(img, np.pi / 6)
-    # newimg = euclidean(img, (50, 100), np.pi / 6)
-    # newimg = similarity(img, (50, 100), np.pi / 6, 0.5)
-    # M = np.array([[1, 0.2, 50], [0.2, 1, 100]])
-    # newimg = affine(img, M)
+    newimg = translation(img, (-50, -100))
+    imgSave(newimg, "translation")
+
+    newimg = rotate(img, np.pi / 6)
+    imgSave(newimg, "rotation")
+
+    newimg = euclidean(img, (200, 400), np.pi / 6)
+    imgSave(newimg, "euclidean")
+
+    newimg = similarity(img, (200, 400), np.pi / 6, 0.5)
+    imgSave(newimg, "similarity")
+
+    M = np.array([[1, 0.2, -50], [0.2, 1, -100]])
+    newimg = affine(img, M)
+    imgSave(newimg, "affine")
+
     T = np.array([[1, 0.1, 50], [0.1, 1, 100], [0, 0.001, 1]])
     newimg = projective(img, T)
-    plt.imshow(newimg)
-    plt.show()
+    imgSave(newimg, "projective")

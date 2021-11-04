@@ -2,25 +2,8 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
-import cv2 as cv
-from utils import interpolate
+from utils import interpolate, getGrad
 from queue import Queue
-
-
-def gausDerivative(sigma, pos, direct):
-    x, y = pos
-    return -1 / (2 * np.pi * (sigma ** 4)) * pos[direct] * np.exp(-(x * x + y * y) / (2 * sigma * sigma))
-
-
-def gausDerivativeFilter(sigma, direct):
-    gausSize = 25
-    filter = np.zeros((gausSize, gausSize))
-    mid = (gausSize - 1) // 2
-    for i in range(gausSize):
-        for j in range(gausSize):
-            filter[i, j] = gausDerivative(sigma, (i - mid, j - mid), direct)
-
-    return filter
 
 
 def NMS(xEdge, yEdge):
@@ -79,31 +62,31 @@ if __name__ == "__main__":
     img = img.convert('L')
     img = np.array(img, dtype='float32') / 255
 
-    sigma = 5
-    xkernel = gausDerivativeFilter(sigma, 0)
-    xEdge = cv.filter2D(img, -1, xkernel)
-
-    ykernel = gausDerivativeFilter(sigma, 1)
-    yEdge = cv.filter2D(img, -1, ykernel)
-
+    xEdge, yEdge = getGrad(img, 3)
     mag = np.sqrt(xEdge * xEdge + yEdge * yEdge)
     angle = np.arctan(yEdge / xEdge)
-
-    '''
-    plt.imshow(xkernel, cmap='bwr')
-    plt.show()
-    plt.imshow(np.sqrt(mag), cmap='gray')
-    plt.show()
-    plt.imshow(angle, cmap='bwr')
-    plt.show()
-    '''
 
     nms = NMS(xEdge, yEdge)
     nms /= nms.max()
 
-    plt.imshow(nms, cmap='gray')
-    plt.show()
-
     edge = biThres(nms, 0.1, 0.2)
-    plt.imshow(edge, cmap='gray')
-    plt.show()
+
+    mid = (400, 650)
+    step = 200
+    plt.figure(figsize=(30, 10))
+    plt.subplot(131)
+    plt.title("gradient", fontsize=36)
+    plt.xticks([])
+    plt.yticks([])
+    plt.imshow(mag[mid[0] - step:mid[0] + step, mid[1] - step:mid[1] + step], cmap='gray')
+    plt.subplot(132)
+    plt.title("nms", fontsize=36)
+    plt.xticks([])
+    plt.yticks([])
+    plt.imshow(nms[mid[0] - step:mid[0] + step, mid[1] - step:mid[1] + step], cmap='gray')
+    plt.subplot(133)
+    plt.title("link", fontsize=36)
+    plt.xticks([])
+    plt.yticks([])
+    plt.imshow(edge[mid[0] - step:mid[0] + step, mid[1] - step:mid[1] + step], cmap='gray')
+    plt.savefig("image/canny.png", bbox_inches='tight', pad_inches=0)

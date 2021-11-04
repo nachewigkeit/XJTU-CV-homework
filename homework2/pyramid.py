@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 from resize import subsampling, upsampling
 import matplotlib.pyplot as plt
+from utils import imgSave
 
 
 def gausPyramid(img, layer):
@@ -28,18 +29,17 @@ def laplacePyramid(img, layer):
 if __name__ == "__main__":
     img = Image.open(r"image\cake.jpg")
     img = img.convert('L')
-    # step= 256
-    # start = (122, 59)
     step = 512
     start = (394, 175)
     img = img.crop((start[0], start[1], start[0] + step, start[1] + step))
     img = np.array(img, dtype='float32').reshape((step, step, 1))
 
     layer = 5
-    pyramid = laplacePyramid(img, layer)
 
-    plt.figure(figsize=(10 * layer, 10))
+    pyramid = laplacePyramid(img, layer)
     for i in range(len(pyramid)):
-        plt.subplot(1, layer, i + 1)
-        plt.imshow(pyramid[i].squeeze(), cmap='gray')
-    plt.show()
+        imgSave(pyramid[i].squeeze(), "laplace" + str(i), 'gray')
+
+    pyramid = gausPyramid(img, layer)
+    for i in range(len(pyramid)):
+        imgSave(pyramid[i].squeeze(), "gaus" + str(i), 'gray')
