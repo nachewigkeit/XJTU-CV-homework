@@ -36,5 +36,6 @@ def match(image1, image2, method=cv.RANSAC):
         plt.xticks([])
         plt.yticks([])
         plt.imshow(imgOut)
+        print(np.sum(imgOut != (0, 0, 0)))
     else:
         print("Not Enough Match Pair")

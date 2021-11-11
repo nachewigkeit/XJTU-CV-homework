@@ -8,6 +8,50 @@ image1 = Image.open(r"image/image1.jpg")
 image1 = np.array(image1)
 image2 = Image.open(r"image/image2.jpg")
 
+image2 = np.array(image2)
+sift = cv.SIFT_create()
+#  使用SIFT查找关键点key points和描述符descriptors
+kp1, des1 = sift.detectAndCompute(image1, None)
+kp2, des2 = sift.detectAndCompute(image2, None)
+kp_image1 = cv.drawKeypoints(image1, kp1, None)
+kp_image2 = cv.drawKeypoints(image2, kp2, None)
+plt.figure(figsize=(20, 8))
+plt.subplot(121)
+plt.xticks([])
+plt.yticks([])
+plt.imshow(kp_image1)
+plt.subplot(122)
+plt.xticks([])
+plt.yticks([])
+plt.imshow(kp_image2)
+plt.savefig(r"image/point.png", bbox_inches='tight')
+
+plt.figure(figsize=(20, 15))
+matcher = cv.BFMatcher()
+raw_matches = matcher.knnMatch(des1, des2, k=2)
+good_matches = []
+for m1, m2 in raw_matches:
+    #  如果最接近和次接近的比值大于一个既定的值，那么我们保留这个最接近的值，认为它和其匹配的点为good_match
+    if m1.distance < 0.85 * m2.distance:
+        good_matches.append([m1])
+ptsA = np.float32([kp1[m[0].queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+ptsB = np.float32([kp2[m[0].trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+H, status = cv.findHomography(ptsA, ptsB, cv.RANSAC)
+plt.subplot(211)
+plt.title("Before RANSAC", fontsize=36)
+plt.xticks([])
+plt.yticks([])
+matches = cv.drawMatchesKnn(image1, kp1, image2, kp2, good_matches, None, flags=2)
+plt.imshow(matches)
+plt.subplot(212)
+plt.title("After RANSAC", fontsize=36)
+plt.xticks([])
+plt.yticks([])
+matches = cv.drawMatchesKnn(image1, kp1, image2, kp2, good_matches, None, matchesMask=status, flags=2)
+plt.imshow(matches)
+plt.savefig(r"image/align.png", bbox_inches='tight')
+
+'''
 plt.figure(figsize=(40, 15))
 enh_bri = ImageEnhance.Brightness(image2)
 enh_col = ImageEnhance.Color(image2)
@@ -45,7 +89,7 @@ match(image1, new_img)
 plt.subplot(244)
 plt.title("Noise", fontsize=36)
 new_img = np.array(image2)
-new_img = gaus_noise(new_img, sigma=0.5)
+new_img = gaus_noise(new_img, sigma=0.4)
 match(image1, new_img)
 plt.subplot(248)
 plt.title("Mask", fontsize=36)
@@ -54,6 +98,7 @@ step = 200
 new_img[300 - step:300 + step, 200 - step:200 + step, :] = 0
 match(image1, new_img)
 plt.savefig(r"image/robust.png", bbox_inches='tight')
+'''
 
 '''
 plt.figure(figsize=(40, 15))
