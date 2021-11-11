@@ -1,52 +1,117 @@
-import cv2 as cv
-import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image, ImageEnhance, ImageFilter
+from utils import match, gaus_noise
+import cv2 as cv
 
-originImage = mpimg.imread("image/cake.jpg")
-image1 = originImage[:300, :400, :]
-image2 = originImage[-300:, -400:, :]
+image1 = Image.open(r"image/image1.jpg")
+image1 = np.array(image1)
+image2 = Image.open(r"image/image2.jpg")
 
-sift = cv.SIFT_create()
-#  使用SIFT查找关键点key points和描述符descriptors
-kp1, des1 = sift.detectAndCompute(image1, None)
-kp2, des2 = sift.detectAndCompute(image2, None)
+plt.figure(figsize=(40, 15))
+enh_bri = ImageEnhance.Brightness(image2)
+enh_col = ImageEnhance.Color(image2)
+enh_con = ImageEnhance.Contrast(image2)
+plt.subplot(241)
+plt.title("High Brightness", fontsize=36)
+new_img = enh_bri.enhance(factor=1.5)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(245)
+plt.title("Low Brightness", fontsize=36)
+new_img = enh_bri.enhance(factor=0.6)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(242)
+plt.title("High Saturation", fontsize=36)
+new_img = enh_col.enhance(factor=1.5)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(246)
+plt.title("Low Saturation", fontsize=36)
+new_img = enh_col.enhance(factor=0.6)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(243)
+plt.title("High Contrast", fontsize=36)
+new_img = enh_con.enhance(factor=1.5)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(247)
+plt.title("Low Contrast", fontsize=36)
+new_img = enh_con.enhance(factor=0.6)
+new_img = np.array(new_img)
+match(image1, new_img)
+plt.subplot(244)
+plt.title("Noise", fontsize=36)
+new_img = np.array(image2)
+new_img = gaus_noise(new_img, sigma=0.5)
+match(image1, new_img)
+plt.subplot(248)
+plt.title("Mask", fontsize=36)
+new_img = np.array(image2)
+step = 200
+new_img[300 - step:300 + step, 200 - step:200 + step, :] = 0
+match(image1, new_img)
+plt.savefig(r"image/robust.png", bbox_inches='tight')
 
-kp_image1 = cv.drawKeypoints(image1, kp1, None)
-kp_image2 = cv.drawKeypoints(image2, kp2, None)
+'''
+plt.figure(figsize=(40, 15))
+plt.subplot(241)
+plt.title("Blur(sigma:1)", fontsize=36)
+new_img = image2.filter(ImageFilter.GaussianBlur(radius=1))
+new_img = np.array(new_img)
+plt.xticks([])
+plt.yticks([])
+plt.imshow(new_img)
+plt.subplot(245)
+match(image1, new_img)
+plt.subplot(242)
+plt.title("Blur(sigma:5)", fontsize=36)
+new_img = image2.filter(ImageFilter.GaussianBlur(radius=5))
+new_img = np.array(new_img)
+plt.xticks([])
+plt.yticks([])
+plt.imshow(new_img)
+plt.subplot(246)
+match(image1, new_img)
+plt.subplot(243)
+plt.title("Shear(0.3)", fontsize=36)
+plt.xticks([])
+plt.yticks([])
+new_img = np.array(image2)
+M = np.array([[1, 0.3, 0], [0.3, 1, 0]])
+new_img = cv.warpAffine(new_img, M, (int(1.5 * new_img.shape[1]), int(1.5 * new_img.shape[0])))
+plt.imshow(new_img)
+plt.subplot(247)
+match(image1, new_img)
+plt.subplot(244)
+plt.title("Shear(0.5)", fontsize=36)
+plt.xticks([])
+plt.yticks([])
+new_img = np.array(image2)
+M = np.array([[1, 0.5, 0], [0.5, 1, 0]])
+new_img = cv.warpAffine(new_img, M, (int(1.5 * new_img.shape[1]), int(1.5 * new_img.shape[0])))
+plt.imshow(new_img)
+plt.subplot(248)
+match(image1, new_img)
+plt.savefig(r"image/attack.png", bbox_inches='tight')
+'''
 
-plt.imshow(kp_image1)
-plt.show()
-
-plt.imshow(kp_image2)
-plt.show()
-
-ratio = 0.85
-matcher = cv.BFMatcher()
-raw_matches = matcher.knnMatch(des1, des2, k=2)
-good_matches = []
-for m1, m2 in raw_matches:
-    #  如果最接近和次接近的比值大于一个既定的值，那么我们保留这个最接近的值，认为它和其匹配的点为good_match
-    if m1.distance < ratio * m2.distance:
-        good_matches.append([m1])
-
-matches = cv.drawMatchesKnn(image1, kp1, image2, kp2, good_matches, None, flags=2)
-
-plt.figure()
-plt.imshow(matches)
-plt.show()
-
-#  单应性矩阵有八个参数，每一个对应的像素点可以产生2个方程(x一个，y一个)，那么需要四个像素点就能解出单应性矩阵
-if len(good_matches) > 4:
-    #  计算匹配时间
-    ptsA = np.float32([kp1[m[0].queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    ptsB = np.float32([kp2[m[0].trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    ransacReprojThreshold = 4
-    #  单应性矩阵可以将一张图通过旋转、变换等方式与另一张图对齐
-    H, status = cv.findHomography(ptsA, ptsB, cv.RANSAC, ransacReprojThreshold);
-    imgOut = cv.warpPerspective(image2, H, (image1.shape[1], image1.shape[0]),
-                                flags=cv.INTER_LINEAR + cv.WARP_INVERSE_MAP)
-
-    plt.figure()
-    plt.imshow(imgOut)
-    plt.show()
+'''
+plt.figure(figsize=(40, 8))
+new_img = np.array(image2)
+plt.subplot(141)
+plt.title("Regular", fontsize=36)
+match(image1, new_img, method=0)
+plt.subplot(142)
+plt.title("RANSAC", fontsize=36)
+match(image1, new_img, method=cv.RANSAC)
+plt.subplot(143)
+plt.title("LMEDS", fontsize=36)
+match(image1, new_img, method=cv.LMEDS)
+plt.subplot(144)
+plt.title("PROSAC", fontsize=36)
+match(image1, new_img, method=cv.RHO)
+plt.savefig(r"image/method.png", bbox_inches='tight')
+'''
