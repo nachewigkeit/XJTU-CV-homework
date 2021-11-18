@@ -5,8 +5,7 @@ import numpy as np
 # 获取标定板角点的位置
 shape = (7, 11)
 objp = np.zeros((shape[0] * shape[1], 3), np.float32)
-objp[:, :2] = np.mgrid[0:shape[1], 0:shape[0]].T.reshape(-1, 2)
-
+objp[:, :2] = np.mgrid[0:shape[0], 0:shape[1]].T.reshape(-1, 2)
 obj_points = []  # 存储3D点
 img_points = []  # 存储2D点
 
@@ -24,15 +23,6 @@ for fname in images:
         corners2 = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)
         img_points.append(corners2)
 
-
-        print(objp.shape)
-        print(corners2.shape)
-        H, status = cv2.findHomography(objp[:, :2], corners2.squeeze(), cv2.RANSAC)
-        imgOut = cv2.warpPerspective(gray, H, (gray.shape[1], gray.shape[0]),
-                                     flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
-        cv2.imshow('img', imgOut)
-        cv2.waitKey(-1)
-
         '''
         cv2.drawChessboardCorners(img, shape, corners, ret)
         cv2.imshow('img', img)
@@ -46,5 +36,22 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, size,
 print("ret:", ret)
 print("mtx:\n", mtx)  # 内参数矩阵
 print("dist:\n", dist)  # 畸变系数   distortion cofficients = (k_1,k_2,p_1,p_2,k_3)
-print("rvecs:\n", rvecs)  # 旋转向量  # 外参数
-print("tvecs:\n", tvecs)  # 平移向量  # 外参数
+
+img = cv2.imread(r"image/001.bmp")
+h, w = img.shape[:2]
+newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
+x, y, w, h = roi
+dst = dst[y:y + h, x:x + w]
+
+mean_error = 0
+
+for j in range(5):
+    dist_new = dist.copy()
+    dist_new[0, j] = 0
+    print(dist_new)
+    for i in range(len(obj_points)):
+        img_points2, _ = cv2.projectPoints(obj_points[i], rvecs[i], tvecs[i], mtx, dist_new)
+        error = cv2.norm(img_points[i], img_points2, cv2.NORM_L2)
+        mean_error += error
+    print(error / len(img_points))
